@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<title>Workouts Dashboard — Jose 2015-2026</title>
+<link rel="stylesheet" href="styles.css">
+<script src="chart.min.js"></script>
+</head>
+<body>
+
+<div id="newBanner" class="new-banner" aria-live="polite"></div>
+
+<header class="site-header">
+  <div class="header-left">
+    <h1 class="site-title">Workouts</h1>
+    <div class="site-meta">— → — · 0 years · <span id="filterInfo">0 workouts</span></div>
+  </div>
+  <div class="header-right">
+    <div class="conn-status"><span class="conn-dot" id="connDot"></span><span id="connText">—</span></div>
+    <button class="btn-icon" id="refreshBtn" onclick="manualRefresh()" title="Refresh data">↻</button>
+  </div>
+</header>
+
+<!-- ── Hero strip ─────────────────────────────────────── -->
+<section class="hero-strip" id="heroStrip">
+  <div class="hero-card" id="heroStreak">
+    <div class="hero-label">Longest streak</div>
+    <div class="hero-value"><span id="heroStreakVal">0</span><span class="hero-unit">days</span></div>
+    <div class="hero-sub" id="heroStreakSub">Current: 0d</div>
+  </div>
+  <div class="hero-card" id="heroType">
+    <div class="hero-label">Favorite type</div>
+    <div class="hero-value" id="heroTypeVal">📦 —</div>
+    <div class="hero-sub" id="heroTypeSub"></div>
+  </div>
+  <div class="hero-card" id="heroYoy">
+    <div class="hero-label">This year vs last</div>
+    <div class="hero-value"><span id="heroYoyVal">0</span><span class="hero-unit">km</span></div>
+    <div class="hero-sub" id="heroYoySub"></div>
+  </div>
+  <div class="hero-card" id="heroAcwr">
+    <div class="hero-label">Training load</div>
+    <div class="hero-value" id="heroAcwrVal">—</div>
+    <div class="hero-sub" id="heroAcwrSub"></div>
+  </div>
+  <div class="hero-card" id="heroPR">
+    <div class="hero-label">Top distance PR</div>
+    <div class="hero-value" id="heroPRVal">—</div>
+    <div class="hero-sub" id="heroPRSub"></div>
+  </div>
+</section>
+
+<!-- ── KPI bar ─────────────────────────────────────────── -->
+<section class="kpi-grid">
+  <div class="kpi"><div class="kpi-label">Workouts</div><div class="kpi-value" id="kpiCount">0</div></div>
+  <div class="kpi"><div class="kpi-label">Distance</div><div class="kpi-value"><span id="kpiDist">0.0</span><span class="kpi-unit">km</span></div></div>
+  <div class="kpi"><div class="kpi-label">Active time</div><div class="kpi-value"><span id="kpiDur">0</span><span class="kpi-unit">h</span></div></div>
+  <div class="kpi"><div class="kpi-label">Calories</div><div class="kpi-value"><span id="kpiCal">0</span><span class="kpi-unit">kcal</span></div></div>
+  <div class="kpi"><div class="kpi-label">Active days</div><div class="kpi-value" id="kpiDays">0</div></div>
+  <div class="kpi"><div class="kpi-label">Max streak</div><div class="kpi-value"><span id="kpiStreak">0</span><span class="kpi-unit">days</span></div></div>
+  <div class="kpi"><div class="kpi-label">ACWR ratio</div><div class="kpi-value" id="kpiAcwr">—</div></div>
+  <div class="kpi"><div class="kpi-label">Avg HR</div><div class="kpi-value"><span>—</span><span class="kpi-unit"></span></div></div>
+</section>
+
+<!-- ── Filters ─────────────────────────────────────────── -->
+<section class="filters-bar">
+  <div class="filter-group">
+    <span class="filter-label">Type</span>
+    <div id="typeFilters" class="chip-group"></div>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Year</span>
+    <input type="number" class="year-input" id="yearFrom" placeholder="from" min="2015" max="2026">
+    <span class="filter-sep">→</span>
+    <input type="number" class="year-input" id="yearTo" placeholder="to" min="2015" max="2026">
+  </div>
+  <div class="filter-group">
+    <label class="toggle-label">
+      <input type="checkbox" id="compareToggle" class="toggle-input">
+      <span class="toggle-track"></span>
+      Compare last year
+    </label>
+  </div>
+  <button class="btn-reset" onclick="resetFilters()">Reset</button>
+</section>
+
+<!-- ── Charts grid ─────────────────────────────────────── -->
+<section class="chart-grid">
+
+  <div class="chart-card" data-lazy="monthlyDist">
+    <div class="chart-header"><h3>Monthly distance</h3></div>
+    <div class="chart-body"><canvas id="monthlyDistChart"></canvas></div>
+  </div>
+
+  <div class="chart-card" data-lazy="typeDist">
+    <div class="chart-header"><h3>Type distribution</h3></div>
+    <div class="chart-body"><canvas id="typeDistChart"></canvas></div>
+  </div>
+
+  <div class="chart-card" data-lazy="weekdayBar">
+    <div class="chart-header"><h3>Activity by weekday</h3></div>
+    <div class="chart-body"><canvas id="weekdayChart"></canvas></div>
+  </div>
+
+  <div class="chart-card" data-lazy="cumulative">
+    <div class="chart-header"><h3>Cumulative distance</h3></div>
+    <div class="chart-body"><canvas id="cumulativeChart"></canvas></div>
+  </div>
+
+  <div class="chart-card" data-lazy="scatter">
+    <div class="chart-header"><h3>HR vs distance</h3></div>
+    <div class="chart-body"><canvas id="scatterChart"></canvas></div>
+  </div>
+
+  <div class="chart-card" data-lazy="hrMonthly">
+    <div class="chart-header"><h3>Monthly HR by type</h3></div>
+    <div class="chart-body"><canvas id="hrMonthlyChart"></canvas></div>
+  </div>
+
+  <div class="chart-card" data-lazy="hrBox">
+    <div class="chart-header"><h3>HR distribution by type</h3></div>
+    <div class="chart-body"><canvas id="hrBoxChart"></canvas></div>
+  </div>
+
+  <div class="chart-card" data-lazy="acwr">
+    <div class="chart-header"><h3>ACWR — Acute:Chronic Workload</h3></div>
+    <div class="chart-body"><canvas id="acwrChart"></canvas></div>
+  </div>
+
+  <div class="chart-card" data-lazy="loadTrend">
+    <div class="chart-header"><h3>Load trend 30 / 60 / 90 days</h3></div>
+    <div class="chart-body"><canvas id="trendChart"></canvas></div>
+  </div>
+
+  <div class="chart-card chart-full" data-lazy="heatmap">
+    <div class="chart-header"><h3>Activity heatmap</h3></div>
+    <div class="heatmap-wrap" id="heatmap"></div>
+    <div class="heatmap-legend">
+      Less <span data-l="0"></span><span data-l="1"></span><span data-l="2"></span><span data-l="3"></span><span data-l="4"></span> More
+    </div>
+  </div>
+
+</section>
+
+<!-- ── Personal Records ───────────────────────────────── -->
+<section class="section-block">
+  <h2 class="section-title">Personal Records</h2>
+  <div class="prs-grid"></div>
+</section>
+
+<!-- ── Annual Goals ───────────────────────────────────── -->
+<section class="section-block">
+  <div class="goals-header">
+    <h2 class="section-title">Annual Goals</h2>
+    <button class="btn-add" onclick="addGoal()">+ Add goal</button>
+  </div>
+  <div id="goalsContainer" class="goals-grid"></div>
+  <div id="goalsEmpty" class="goals-empty" style="display:none">
+    No goals set. Add one to track your progress.
+  </div>
+</section>
+
+<!-- ── Top 5 months ───────────────────────────────────── -->
+<section class="section-block">
+  <h2 class="section-title">Top 5 months by distance</h2>
+  <table class="data-table" id="top5Table">
+    <thead><tr><th>Month</th><th>Workouts</th><th>Distance</th></tr></thead>
+    <tbody id="top5Body"></tbody>
+  </table>
+</section>
+
+<script>
+let data = null;
+
+async function bootstrap() {
+  try {
+    const r = await fetch('data.json');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    data = await r.json();
+    initApp();
+  } catch(e) {
+    console.error('bootstrap error', e);
+    document.body.innerHTML = '<div style="padding:40px;color:#f85149;font-family:monospace">Failed to load data: ' + e.message + '</div>';
+  }
+}
+
+function initApp() {
+  readURL();
+  buildTypeChips();
+  document.getElementById('yearFrom').value = yearFrom;
+  document.getElementById('yearTo').value = yearTo;
+  document.getElementById('compareToggle').checked = compareMode;
+  document.getElementById('yearFrom').onchange = e => { yearFrom = parseInt(e.target.value) || yearFrom; renderAll(); };
+  document.getElementById('yearTo').onchange = e => { yearTo = parseInt(e.target.value) || yearTo; renderAll(); };
+  document.getElementById('compareToggle').onchange = e => { compareMode = e.target.checked; renderAll(); };
+  renderHero();
+  renderTop5();
+  renderGoals();
+  reloadVisibleCharts();
+  setupLazyCharts();
+  lastSeenTs = data.kpi.last_date || '0';
+  setStatus('ok', 'connected');
+  pollNewWorkouts();
+  setInterval(pollNewWorkouts, POLL_MS);
+}
+
+// ── State ─────────────────────────────────────────────────
+let activeTypes = new Set();
+let yearFrom = 2015;
+let yearTo = 2026;
+let compareMode = false;
+
+// ── Chart registry ────────────────────────────────────────
+const charts = {};
+const loaded = new Set();
+
+// ── URL persistence ───────────────────────────────────────
+function readURL() {
+  const p = new URLSearchParams(window.location.search);
+  const types = p.get('types');
+  if (types) types.split(',').filter(Boolean).forEach(t => activeTypes.add(t));
+  const from = parseInt(p.get('from'));
+  const to = parseInt(p.get('to'));
+  if (from && from >= 2015 && from <= 2026) yearFrom = from;
+  if (to && to >= 2015 && to <= 2026) yearTo = to;
+  if (to < from) yearTo = yearFrom;
+  compareMode = p.get('compare') === '1';
+}
+
+function writeURL() {
+  const p = new URLSearchParams();
+  if (activeTypes.size > 0) p.set('types', [...activeTypes].sort().join(','));
+  const minYear = parseInt(data.years[0]);
+  const maxYear = parseInt(data.years[data.years.length - 1]);
+  if (yearFrom !== minYear) p.set('from', yearFrom);
+  if (yearTo !== maxYear) p.set('to', yearTo);
+  if (compareMode) p.set('compare', '1');
+  const qs = p.toString();
+  history.replaceState(null, '', qs ? '?' + qs : window.location.pathname);
+}
+
+// ── Filter helpers ────────────────────────────────────────
+function filteredMonths() {
+  return Object.keys(data.by_month).filter(m => {
+    const y = parseInt(m.slice(0, 4));
+    return y >= yearFrom && y <= yearTo;
+  });
+}
+
+function prevYearMonths() {
+  return Object.keys(data.by_month).filter(m => {
+    const y = parseInt(m.slice(0, 4));
+    return y >= (yearFrom - 1) && y <= (yearTo - 1);
+  });
+}
+
+function monthTypeWeight(m) {
+  if (activeTypes.size === 0) return 1;
+  const v = data.by_month[m];
+  if (!v) return 0;
+  const total = Object.values(v.types).reduce((a, b) => a + b, 0);
+  const sel = Object.entries(v.types)
+    .filter(([t]) => activeTypes.has(t))
+    .reduce((a, [, c]) => a + c, 0);
+  return total > 0 ? sel / total : 0;
+}
+
+// ── KPI recompute ─────────────────────────────────────────
+function recomputeKPIs() {
+  const months = filteredMonths();
+  let count = 0, dist = 0, cal = 0, dur = 0;
+  months.forEach(m => {
+    const v = data.by_month[m];
+    const w = monthTypeWeight(m);
+    if (w === 0) return;
+    count += Math.round(v.count * w);
+    dist += v.distance_km * w;
+    cal += v.calories * w;
+    dur += v.duration_hours * w;
+  });
+
+  const filteredDays = Object.keys(data.by_day).filter(d => {
+    const y = parseInt(d.slice(0, 4));
+    return y >= yearFrom && y <= yearTo;
+  });
+  const maxStr = computeMaxStreak(filteredDays);
+
+  setEl('kpiCount', count.toLocaleString());
+  setEl('kpiDist', dist.toFixed(1));
+  setEl('kpiCal', cal.toFixed(0));
+  setEl('kpiDur', dur.toFixed(0));
+  setEl('kpiDays', filteredDays.length.toLocaleString());
+  setEl('kpiStreak', maxStr);
+
+  const parts = [];
+  if (activeTypes.size) parts.push([...activeTypes].join(', '));
+  const minY = parseInt(data.years[0]), maxY = parseInt(data.years[data.years.length - 1]);
+  if (yearFrom !== minY || yearTo !== maxY) parts.push(`${yearFrom}-${yearTo}`);
+  setEl('filterInfo', count.toLocaleString() + ' workouts' + (parts.length ? ' · ' + parts.join(' · ') : ''));
+}
+
+function computeMaxStreak(dates) {
+  const sorted = [...dates].sort();
+  let max = 0, cur = 0, prev = null;
+  for (const d of sorted) {
+    if (prev) {
+      const diff = (new Date(d) - new Date(prev)) / 86400000;
+      cur = diff === 1 ? cur + 1 : 1;
+    } else cur = 1;
+    max = Math.max(max, cur);
+    prev = d;
+  }
+  return max;
+}
+
+function setEl(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+// ── Hero strip ────────────────────────────────────────────
+function renderHero() {
+  // YoY sub
+  const yoy = data.kpi.yoy_pct_change;
+  const yoyDir = yoy == null ? '' : yoy >= 0 ? '↑' : '↓';
+  const yoyColor = yoy == null ? '' : yoy >= 0 ? 'var(--accent)' : 'var(--danger)';
+  const yoySub = yoy != null
+    ? `<span style="color:${yoyColor}">${yoyDir} ${Math.abs(yoy)}%</span> vs ${data.kpi.prev_year} (${data.kpi.yoy_prev_km.toLocaleString()} km)`
+    : `prev year: ${data.kpi.yoy_prev_km.toLocaleString()} km`;
+  setEl('heroYoySub', '');
+  document.getElementById('heroYoySub').innerHTML = yoySub;
+
+  // Fav type sub
+  const ft = data.kpi.fav_type;
+  if (ft && data.by_type[ft]) {
+    setEl('heroTypeSub', data.by_type[ft].count + ' sessions');
+  }
+
+  // ACWR hero
+  const h = data.load_health;
+  const acwrLabels = {
+    sweet: '🟢 In the zone', warning: '🟠 Elevated', overtraining: '🔴 Overreaching',
+    detraining: '🟡 Detraining', rest: '⚪ Rest', no_data: '— No data'
+  };
+  const acwrColors = {
+    sweet: 'var(--accent)', warning: 'var(--warning)', overtraining: 'var(--danger)',
+    detraining: 'var(--warning)', rest: 'var(--text-muted)', no_data: 'var(--text-muted)'
+  };
+  const acwrEl = document.getElementById('heroAcwrVal');
+  acwrEl.textContent = acwrLabels[h.status] || '—';
+  acwrEl.style.color = acwrColors[h.status] || '';
+  acwrEl.style.fontSize = '18px';
+  setEl('heroAcwrSub', `ratio: ${h.current_ratio} · 30d: ${h.last30_pct_sweet}% sweet`);
+  setEl('kpiAcwr', h.current_ratio || '—');
+  document.getElementById('kpiAcwr').style.color = acwrColors[h.status] || '';
+
+  // Top PR (running max distance or first type with max dist)
+  const prTypes = Object.entries(data.prs).sort((a, b) => b[1].count - a[1].count);
+  const topPR = prTypes.find(([, p]) => p.max_distance);
+  if (topPR) {
+    const [type, p] = topPR;
+    document.getElementById('heroPRVal').textContent = p.max_distance.value_km + ' km';
+    setEl('heroPRSub', type + ' · ' + p.max_distance.date);
+  }
+}
+
+// ── Type filter chips ─────────────────────────────────────
+function buildTypeChips() {
+  const container = document.getElementById('typeFilters');
+  container.innerHTML = '';
+  data.types.forEach(t => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (activeTypes.size === 0 || activeTypes.has(t) ? ' active' : '');
+    chip.textContent = t;
+    chip.dataset.type = t;
+    chip.onclick = () => toggleType(t);
+    container.appendChild(chip);
+  });
+}
+
+function toggleType(t) {
+  if (activeTypes.has(t)) activeTypes.delete(t);
+  else activeTypes.add(t);
+  syncChips();
+  renderAll();
+  writeURL();
+}
+
+function syncChips() {
+  document.querySelectorAll('.chip[data-type]').forEach(c => {
+    const isActive = activeTypes.size === 0 || activeTypes.has(c.dataset.type);
+    c.className = 'chip' + (isActive ? ' active' : '');
+  });
+}
+
+function resetFilters() {
+  activeTypes.clear();
+  yearFrom = parseInt(data.years[0]);
+  yearTo = parseInt(data.years[data.years.length - 1]);
+  compareMode = false;
+  document.getElementById('yearFrom').value = yearFrom;
+  document.getElementById('yearTo').value = yearTo;
+  document.getElementById('compareToggle').checked = false;
+  syncChips();
+  renderAll();
+  writeURL();
+}
+
+// ── Charts ────────────────────────────────────────────────
+const COLORS = ['#58a6ff','#3fb950','#f0883e','#ff6b6b','#a371f7','#39d353','#ffa657','#79c0ff','#56d364','#ff7b72'];
+
+function chartDefaults() {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: 'var(--text-muted)', maxTicksLimit: 18 }, grid: { color: 'var(--border)' } },
+      y: { ticks: { color: 'var(--text-muted)' }, grid: { color: 'var(--border)' } }
+    }
+  };
+}
+
+function mkChart(id, config) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(el.getContext('2d'), config);
+  return charts[id];
+}
+
+function initMonthlyDist() {
+  const months = filteredMonths();
+  const curData = months.map(m => data.by_month[m].distance_km * monthTypeWeight(m));
+  const datasets = [{
+    label: 'Distance (km)', data: curData,
+    borderColor: COLORS[0], backgroundColor: COLORS[0] + '22',
+    fill: true, tension: 0.35, pointRadius: 1, pointHoverRadius: 4, borderWidth: 2
+  }];
+  if (compareMode) {
+    const prevM = prevYearMonths();
+    datasets.push({
+      label: 'Prev year', data: prevM.map(m => data.by_month[m].distance_km),
+      borderColor: COLORS[2], backgroundColor: 'transparent',
+      tension: 0.35, pointRadius: 1, pointHoverRadius: 4, borderWidth: 1.5,
+      borderDash: [4, 3]
+    });
+  }
+  const opts = chartDefaults();
+  opts.plugins.legend = { display: compareMode, labels: { color: 'var(--text)' } };
+  mkChart('monthlyDistChart', { type: 'line', data: { labels: months, datasets }, options: opts });
+}
+
+function initTypeDist() {
+  const months = filteredMonths();
+  const byT = {};
+  months.forEach(m => {
+    const v = data.by_month[m];
+    Object.entries(v.types).forEach(([t, c]) => {
+      if (activeTypes.size > 0 && !activeTypes.has(t)) return;
+      byT[t] = (byT[t] || 0) + c;
+    });
+  });
+  const sorted = Object.entries(byT).sort((a, b) => b[1] - a[1]);
+  mkChart('typeDistChart', {
+    type: 'doughnut',
+    data: {
+      labels: sorted.map(([t]) => t),
+      datasets: [{ data: sorted.map(([, c]) => c), backgroundColor: COLORS, borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { color: 'var(--text)', boxWidth: 12, padding: 12 } } }
+    }
+  });
+}
+
+function initWeekday() {
+  const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const dist = labels.map(d => +(data.weekday_dist[d]?.distance_km || 0).toFixed(1));
+  mkChart('weekdayChart', {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Distance (km)', data: dist, backgroundColor: COLORS[0] + 'cc', borderRadius: 4 }] },
+    options: chartDefaults()
+  });
+}
+
+function initCumulative() {
+  const items = data.cumulative_km.filter(x => {
+    const y = parseInt(x.month.slice(0, 4));
+    return y >= yearFrom && y <= yearTo;
+  });
+  mkChart('cumulativeChart', {
+    type: 'line',
+    data: {
+      labels: items.map(x => x.month),
+      datasets: [{
+        label: 'Cumulative km', data: items.map(x => x.cumulative),
+        borderColor: COLORS[1], backgroundColor: COLORS[1] + '22',
+        fill: true, tension: 0.2, pointRadius: 0, pointHoverRadius: 4, borderWidth: 2
+      }]
+    },
+    options: chartDefaults()
+  });
+}
+
+function initScatter() {
+  const byT = {};
+  data.scatter.forEach(p => {
+    if (activeTypes.size > 0 && !activeTypes.has(p.type)) return;
+    const y = parseInt(p.date.slice(0, 4));
+    if (y < yearFrom || y > yearTo) return;
+    (byT[p.type] = byT[p.type] || []).push(p);
+  });
+  const datasets = Object.entries(byT).map(([t, pts], i) => ({
+    label: t, data: pts, backgroundColor: COLORS[i % COLORS.length] + 'bb', pointRadius: 3
+  }));
+  const opts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'right', labels: { color: 'var(--text)', boxWidth: 10, padding: 10 } } },
+    scales: {
+      x: { title: { display: true, text: 'Distance (km)', color: 'var(--text-muted)' }, ticks: { color: 'var(--text-muted)' }, grid: { color: 'var(--border)' } },
+      y: { title: { display: true, text: 'Avg HR (bpm)', color: 'var(--text-muted)' }, ticks: { color: 'var(--text-muted)' }, grid: { color: 'var(--border)' } }
+    }
+  };
+  mkChart('scatterChart', { type: 'scatter', data: { datasets }, options: opts });
+}
+
+function initHrMonthly() {
+  const months = filteredMonths();
+  const allT = [...new Set(months.flatMap(m => Object.keys(data.hr_monthly[m] || {})))].sort();
+  const datasets = allT.map((t, i) => ({
+    label: t, data: months.map(m => data.hr_monthly[m]?.[t] ?? null),
+    borderColor: COLORS[i % COLORS.length],
+    tension: 0.3, spanGaps: true, pointRadius: 1, pointHoverRadius: 4
+  }));
+  const opts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'right', labels: { color: 'var(--text)', boxWidth: 10, padding: 8 } } },
+    scales: {
+      x: { ticks: { color: 'var(--text-muted)', maxTicksLimit: 16 }, grid: { color: 'var(--border)' } },
+      y: { title: { display: true, text: 'Avg HR (bpm)', color: 'var(--text-muted)' }, ticks: { color: 'var(--text-muted)' }, grid: { color: 'var(--border)' } }
+    }
+  };
+  mkChart('hrMonthlyChart', { type: 'line', data: { labels: months, datasets }, options: opts });
+}
+
+function initHrBox() {
+  const months = filteredMonths();
+  const activeT = activeTypes.size > 0
+    ? [...activeTypes]
+    : Object.keys(data.hr_distribution);
+  const types = activeT.filter(t => data.hr_distribution[t]).sort();
+  const c = ['#30363d','#58a6ff','#3fb950','#f0883e','#ff6b6b'];
+  const lbls = ['Min','Q1','Median','Q3','Max'];
+  const keys = ['min','q1','median','q3','max'];
+  const datasets = keys.map((k, i) => ({
+    label: lbls[i], data: types.map(t => data.hr_distribution[t][k] || 0),
+    backgroundColor: c[i]
+  }));
+  const opts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', labels: { color: 'var(--text)', boxWidth: 10 } } },
+    scales: {
+      x: { ticks: { color: 'var(--text-muted)' }, grid: { color: 'var(--border)' } },
+      y: { title: { display: true, text: 'HR (bpm)', color: 'var(--text-muted)' }, ticks: { color: 'var(--text-muted)' }, grid: { color: 'var(--border)' } }
+    }
+  };
+  mkChart('hrBoxChart', { type: 'bar', data: { labels: types, datasets }, options: opts });
+}
+
+const acwrZonesPlugin = {
+  id: 'acwrZones',
+  beforeDatasetsDraw(chart) {
+    const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+    if (!y) return;
+    [
+      [0, 0.8, 'rgba(139,148,158,0.07)'],
+      [0.8, 1.3, 'rgba(63,185,80,0.10)'],
+      [1.3, 1.5, 'rgba(210,153,34,0.10)'],
+      [1.5, 2.5, 'rgba(248,81,73,0.10)'],
+    ].forEach(([y1, y2, color]) => {
+      const py1 = y.getPixelForValue(y1), py2 = y.getPixelForValue(y2);
+      ctx.fillStyle = color;
+      ctx.fillRect(left, Math.min(py1, py2), right - left, Math.abs(py2 - py1));
+    });
+  }
+};
+
+function initAcwr() {
+  const recent = data.acwr.slice(-365);
+  const opts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: { afterLabel: ctx => {
+        const r = ctx.parsed.y;
+        if (r === 0) return 'Rest';
+        if (r < 0.8) return 'Detraining';
+        if (r <= 1.3) return 'Sweet spot';
+        if (r <= 1.5) return 'Elevated';
+        return 'Overreaching';
+      }}}
+    },
+    scales: {
+      x: { ticks: { color: 'var(--text-muted)', maxTicksLimit: 12 }, grid: { color: 'var(--border)' } },
+      y: { suggestedMin: 0, suggestedMax: 2, ticks: { color: 'var(--text-muted)' }, grid: { color: 'var(--border)' } }
+    }
+  };
+  mkChart('acwrChart', {
+    type: 'line',
+    data: { labels: recent.map(d => d.date), datasets: [{
+      data: recent.map(d => d.ratio),
+      borderColor: COLORS[0], backgroundColor: COLORS[0] + '22',
+      fill: true, tension: 0.2, pointRadius: 0, pointHoverRadius: 4, borderWidth: 2
+    }] },
+    options: opts,
+    plugins: [acwrZonesPlugin]
+  });
+}
+
+function initTrend() {
+  const recent = data.trend.slice(-365);
+  mkChart('trendChart', {
+    type: 'line',
+    data: { labels: recent.map(d => d.date), datasets: [
+      { label: '30d', data: recent.map(d => d.l30), borderColor: COLORS[0], tension: 0.3, pointRadius: 0, borderWidth: 2 },
+      { label: '60d', data: recent.map(d => d.l60), borderColor: COLORS[1], tension: 0.3, pointRadius: 0, borderWidth: 2 },
+      { label: '90d', data: recent.map(d => d.l90), borderColor: COLORS[2], tension: 0.3, pointRadius: 0, borderWidth: 2 },
+    ] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { color: 'var(--text)', boxWidth: 10 } } },
+      scales: {
+        x: { ticks: { color: 'var(--text-muted)', maxTicksLimit: 12 }, grid: { color: 'var(--border)' } },
+        y: { ticks: { color: 'var(--text-muted)' }, grid: { color: 'var(--border)' } }
+      }
+    }
+  });
+}
+
+// ── Heatmap ───────────────────────────────────────────────
+function renderHeatmap() {
+  const hm = document.getElementById('heatmap');
+  const byDay = data.by_day;
+  const maxC = Math.max(1, ...Object.values(byDay));
+  function level(c) { return !c ? 0 : c < maxC * 0.25 ? 1 : c < maxC * 0.5 ? 2 : c < maxC * 0.75 ? 3 : 4; }
+  let html = '';
+  for (let y = yearFrom; y <= yearTo; y++) {
+    for (let wk = 0; wk < 53; wk++) {
+      const d = new Date(y, 0, 1 + wk * 7);
+      if (d.getFullYear() !== y) continue;
+      const ds = d.toISOString().slice(0, 10);
+      const byDT = data.by_day_type[ds] || {};
+      const c = activeTypes.size === 0
+        ? (byDay[ds] || 0)
+        : Object.entries(byDT).filter(([t]) => activeTypes.has(t)).reduce((a, [, n]) => a + n, 0);
+      html += `<span data-l="${level(c)}" title="${ds}: ${c} workout${c !== 1 ? 's' : ''}"></span>`;
+    }
+  }
+  hm.innerHTML = html;
+}
+
+// ── Lazy loading ──────────────────────────────────────────
+const chartInits = {
+  monthlyDist: initMonthlyDist,
+  typeDist: initTypeDist,
+  weekdayBar: initWeekday,
+  cumulative: initCumulative,
+  scatter: initScatter,
+  hrMonthly: initHrMonthly,
+  hrBox: initHrBox,
+  acwr: initAcwr,
+  loadTrend: initTrend,
+  heatmap: renderHeatmap,
+};
+
+let observer;
+function setupLazyCharts() {
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const key = entry.target.dataset.lazy;
+      if (key && chartInits[key]) {
+        chartInits[key]();
+        loaded.add(key);
+      }
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('[data-lazy]').forEach(el => observer.observe(el));
+}
+
+function reloadVisibleCharts() {
+  document.querySelectorAll('[data-lazy]').forEach(el => {
+    const key = el.dataset.lazy;
+    if (key && chartInits[key]) chartInits[key]();
+  });
+}
+
+// ── Goals (localStorage) ──────────────────────────────────
+const GOALS_KEY = 'dashboard_goals_v1';
+
+function loadGoals() { return JSON.parse(localStorage.getItem(GOALS_KEY) || '[]'); }
+function saveGoals(g) { localStorage.setItem(GOALS_KEY, JSON.stringify(g)); }
+
+function getActualKm(type, year) {
+  let km = 0;
+  Object.entries(data.by_month).forEach(([m, v]) => {
+    if (m.startsWith(year)) {
+      const ratio = type === '__all__' ? 1 : (v.types[type] || 0) / Math.max(1, Object.values(v.types).reduce((a,b)=>a+b,0));
+      km += v.distance_km * ratio;
+    }
+  });
+  return Math.round(km);
+}
+
+function renderGoals() {
+  const goals = loadGoals();
+  const container = document.getElementById('goalsContainer');
+  const empty = document.getElementById('goalsEmpty');
+  if (!goals.length) { container.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  container.innerHTML = goals.map((g, i) => {
+    const actual = getActualKm(g.type, g.year);
+    const pct = Math.min(100, Math.round(actual / g.target_km * 100));
+    const remaining = Math.max(0, g.target_km - actual);
+    const typeLabel = g.type === '__all__' ? 'All types' : g.type;
+    return `<div class="goal-card">
+      <div class="goal-top">
+        <span class="goal-title">${typeLabel} ${g.year}</span>
+        <span class="goal-pct">${pct}%</span>
+        <button class="goal-del" onclick="deleteGoal(${i})" title="Delete">✕</button>
+      </div>
+      <div class="goal-progress"><div class="goal-bar" style="width:${pct}%"></div></div>
+      <div class="goal-detail">${actual.toLocaleString()} / ${g.target_km.toLocaleString()} km · ${remaining.toLocaleString()} km remaining</div>
+    </div>`;
+  }).join('');
+}
+
+function addGoal() {
+  const types = ['__all__', ...data.types];
+  const typeOpts = types.map(t => `<option value="${t}">${t === '__all__' ? 'All types' : t}</option>`).join('');
+  const yearOpts = data.years.map(y => `<option value="${y}" ${y === data.kpi.current_year ? 'selected' : ''}>${y}</option>`).join('');
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal">
+      <h3>Add Goal</h3>
+      <label>Type <select id="gType">${typeOpts}</select></label>
+      <label>Year <select id="gYear">${yearOpts}</select></label>
+      <label>Target km <input type="number" id="gTarget" placeholder="e.g. 1000" min="1" max="100000"></label>
+      <div class="modal-btns">
+        <button class="btn-primary" onclick="saveGoalModal()">Save</button>
+        <button class="btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+}
+
+function saveGoalModal() {
+  const type = document.getElementById('gType').value;
+  const year = document.getElementById('gYear').value;
+  const target_km = parseInt(document.getElementById('gTarget').value);
+  if (!target_km || target_km < 1) return;
+  const goals = loadGoals();
+  goals.push({ type, year, target_km });
+  saveGoals(goals);
+  document.querySelector('.modal-overlay')?.remove();
+  renderGoals();
+}
+
+function deleteGoal(i) {
+  const goals = loadGoals();
+  goals.splice(i, 1);
+  saveGoals(goals);
+  renderGoals();
+}
+
+// ── Top 5 table ───────────────────────────────────────────
+function renderTop5() {
+  const tbody = document.getElementById('top5Body');
+  tbody.innerHTML = data.top5_months.map((r, i) =>
+    `<tr${i === 0 ? ' class="top1"' : ''}><td>${r.month}</td><td>${r.count}</td><td>${r.distance_km.toLocaleString()} km</td></tr>`
+  ).join('');
+}
+
+// ── Live polling ──────────────────────────────────────────
+let lastSeenTs = '0';
+const POLL_MS = 60000;
+let isReloading = false;
+
+async function pollNewWorkouts() {
+  try {
+    setStatus('stale', 'checking…');
+    const r = await fetch(`/api/since?ts=${encodeURIComponent(lastSeenTs)}`);
+    if (!r.ok) throw new Error(r.status);
+    const payload = await r.json();
+    setStatus('ok', new Date().toLocaleTimeString());
+    if (payload.count > 0) {
+      const dist = payload.workouts.reduce((a, x) => a + (x.distance || 0), 0) / 1000;
+      showBanner(`${payload.count} new workout${payload.count > 1 ? 's' : ''} · ${dist.toFixed(1)} km`);
+      lastSeenTs = payload.workouts.at(-1).startDate;
+    }
+  } catch { setStatus('error', 'offline'); }
+}
+
+async function manualRefresh() {
+  if (isReloading) return;
+  isReloading = true;
+  document.getElementById('refreshBtn').textContent = '⟳';
+  setStatus('stale', 'refreshing…');
+  try {
+    const r = await fetch('/api/refresh', { method: 'POST' });
+    if (!r.ok) throw new Error(r.status);
+    const payload = await r.json();
+    Object.assign(data, payload.stats);
+    reloadVisibleCharts();
+    recomputeKPIs();
+    renderHero();
+    renderTop5();
+    showBanner('Data updated · ' + new Date().toLocaleTimeString());
+    setStatus('ok', new Date().toLocaleTimeString());
+  } catch { setStatus('error', 'error'); }
+  finally { document.getElementById('refreshBtn').textContent = '↻'; isReloading = false; }
+}
+
+function showBanner(text) {
+  const b = document.getElementById('newBanner');
+  b.textContent = text;
+  b.classList.add('visible');
+  setTimeout(() => b.classList.remove('visible'), 5000);
+}
+
+function setStatus(kind, text) {
+  const dot = document.getElementById('connDot');
+  dot.className = 'conn-dot conn-' + kind;
+  setEl('connText', text);
+}
+
+// ── Init ──────────────────────────────────────────────────
+function renderAll() {
+  syncChips();
+  recomputeKPIs();
+  reloadVisibleCharts();
+  writeURL();
+}
+
+bootstrap();
+</script>
+</body>
+</html>

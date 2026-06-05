@@ -1,0 +1,77 @@
+{
+  "kpi": {
+    "total_workouts": 0,
+    "total_distance_km": 0.0,
+    "total_calories": 0,
+    "total_duration_hours": 0.0,
+    "first_date": null,
+    "last_date": null,
+    "unique_days": 0,
+    "max_streak_days": 0,
+    "current_streak_days": 0,
+    "years_active": 0,
+    "avg_hr_global": null,
+    "fav_type": null,
+    "yoy_current_km": 0.0,
+    "yoy_prev_km": 0.0,
+    "yoy_pct_change": null,
+    "current_year": "2026",
+    "prev_year": "2025"
+  },
+  "by_type": {},
+  "by_month": {},
+  "by_year": {},
+  "by_day": {},
+  "by_day_type": {},
+  "hr_monthly": {},
+  "hr_distribution": {},
+  "acwr": [],
+  "trend": [],
+  "load_health": {
+    "current_ratio": 0,
+    "current_acute": 0,
+    "current_chronic": 0,
+    "status": "no_data",
+    "weekly_pct_change": null,
+    "last30_pct_sweet": 0,
+    "last30_pct_over": 0,
+    "last30_pct_under": 0,
+    "last_date": null
+  },
+  "top5_months": [],
+  "prs": {},
+  "scatter": [],
+  "weekday_dist": {
+    "Mon": {
+      "count": 0,
+      "distance_km": 0.0
+    },
+    "Tue": {
+      "count": 0,
+      "distance_km": 0.0
+    },
+    "Wed": {
+      "count": 0,
+      "distance_km": 0.0
+    },
+    "Thu": {
+      "count": 0,
+      "distance_km": 0.0
+    },
+    "Fri": {
+      "count": 0,
+      "distance_km": 0.0
+    },
+    "Sat": {
+      "count": 0,
+      "distance_km": 0.0
+    },
+    "Sun": {
+      "count": 0,
+      "distance_km": 0.0
+    }
+  },
+  "cumulative_km": [],
+  "types": [],
+  "years": []
+}

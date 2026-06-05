@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body style="background:#0d1117;padding:20px">
+<div style="position:relative;height:260px;width:500px;background:#161b22;border:1px solid #30363d">
+  <canvas id="test"></canvas>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('test');
+  console.log('Canvas:', el, el.offsetWidth, el.offsetHeight, el.parentElement.clientHeight);
+  new Chart(el.getContext('2d'), {
+    type: 'bar',
+    data: { labels: ['A','B','C'], datasets: [{ data: [10,20,15], backgroundColor: '#58a6ff' }] },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+});
+</script>
+</body>
+</html>
