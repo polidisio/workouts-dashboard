@@ -10,8 +10,8 @@ import os
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-VAULT_DIR = "/Users/clot/Library/Mobile Documents/com~apple~CloudDocs/Vault/snapshots"
-OUTPUT_DIR = "/Users/clot/Projects/workouts-dashboard"
+VAULT_DIR = "/Users/jmaudisio/Library/Mobile Documents/com~apple~CloudDocs/Vault/snapshots"
+OUTPUT_DIR = "/Users/jmaudisio/.openclaw/workspace/workouts-dashboard"
 OUTPUT_HTML = os.path.join(OUTPUT_DIR, "index.html")
 OUTPUT_DATA = os.path.join(OUTPUT_DIR, "data.json")
 
