@@ -102,6 +102,15 @@ def maybe_refresh(force=False):
         _cache["version_ts"] = new_version
 
 
+@app.before_request
+def _ensure_loaded():
+    """Carga workouts y stats al primer request (lazy init)."""
+    if not _cache["by_id"]:
+        _cache["by_id"] = load_workouts_from_disk()
+        _cache["version_ts"] = discover_version_ts()
+        rebuild_stats()
+
+
 @app.route("/")
 def root():
     maybe_refresh()
